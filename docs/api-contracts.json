@@ -1,0 +1,188 @@
+{
+"$schema": "https://json-schema.org/draft/2020-12/schema",
+"title": "Marketplace API Contracts",
+"version": "1.0.0",
+"description": "Contratos de API para la PoC de Marketplace Serverless (Spring Cloud Function vs Quarkus Funqy)",
+"endpoints": {
+"generateProduct": {
+"path": "/api/products/generate",
+"method": "POST",
+"summary": "Genera un nuevo producto ficticio utilizando IA (Bedrock/Claude Haiku) con filtro de moderación e imágenes de Unsplash",
+"requestBody": {
+"contentType": "application/json",
+"schema": {
+"type": "object",
+"required": ["prompt"],
+"properties": {
+"prompt": {
+"type": "string",
+"minLength": 3,
+"maxLength": 200,
+"example": "Unos audífonos gamer inalámbricos con luces RGB"
+}
+}
+}
+},
+"responses": {
+"201": {
+"description": "Producto generado exitosamente",
+"schema": {
+"type": "object",
+"required": ["id", "title", "description", "price", "category", "image_url", "created_at"],
+"properties": {
+"id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440000" },
+"title": { "type": "string", "example": "Audífonos Gamer RGB Wireless" },
+"description": { "type": "string", "example": "Audífonos supraaurales con luces LED RGB y cancelación de ruido." },
+"price": { "type": "number", "minimum": 0.01, "example": 89.99 },
+"category": { "type": "string", "enum": ["technology", "home", "office", "clothing"], "example": "technology" },
+"image_url": { "type": "string", "format": "uri", "example": "https://source.unsplash.com/600x600/?gaming,headphones" },
+"created_at": { "type": "string", "format": "date-time", "example": "2026-10-11T01:27:00Z" }
+}
+}
+},
+"400": {
+"description": "Prompt rechazado por políticas de contenido o inyección de código",
+"schema": {
+"type": "object",
+"required": ["error", "message"],
+"properties": {
+"error": { "type": "string", "example": "BAD_REQUEST" },
+"message": { "type": "string", "example": "El prompt ingresado no cumple con las políticas de contenido o contiene términos no permitidos." }
+}
+}
+},
+"504": {
+"description": "Tiempo de espera agotado al consultar el servicio de IA",
+"schema": {
+"type": "object",
+"required": ["error", "message"],
+"properties": {
+"error": { "type": "string", "example": "AI_TIMEOUT" },
+"message": { "type": "string", "example": "La IA está tomando más tiempo del esperado. Por favor, intenta de nuevo." }
+}
+}
+}
+}
+},
+"checkoutSpring": {
+"path": "/api/checkout/spring",
+"method": "POST",
+"summary": "Procesa la orden de compra utilizando el backend de Spring Cloud Function y retorna métricas de telemetría",
+"requestBody": { "$ref": "#/components/schemas/CheckoutRequest" },
+"responses": {
+"200": { "$ref": "#/components/schemas/CheckoutSpringResponse" },
+"400": { "$ref": "#/components/schemas/ErrorResponse" }
+}
+},
+"checkoutQuarkus": {
+"path": "/api/checkout/quarkus",
+"method": "POST",
+"summary": "Procesa la orden de compra utilizando el backend de Quarkus Funqy y retorna métricas de telemetría",
+"requestBody": { "$ref": "#/components/schemas/CheckoutRequest" },
+"responses": {
+"200": { "$ref": "#/components/schemas/CheckoutQuarkusResponse" },
+"400": { "$ref": "#/components/schemas/ErrorResponse" }
+}
+},
+"listProducts": {
+"path": "/api/products",
+"method": "GET",
+"summary": "Obtiene la lista de productos almacenados previamente en el catálogo de DynamoDB",
+"responses": {
+"200": {
+"description": "Lista de productos activos",
+"schema": {
+"type": "object",
+"required": ["products"],
+"properties": {
+"products": {
+"type": "array",
+"items": { "$ref": "#/endpoints/generateProduct/responses/201/schema" }
+}
+}
+}
+}
+}
+}
+},
+"components": {
+"schemas": {
+"CheckoutRequest": {
+"type": "object",
+"required": ["items"],
+"properties": {
+"items": {
+"type": "array",
+"minItems": 1,
+"items": {
+"type": "object",
+"required": ["product_id", "quantity", "unit_price"],
+"properties": {
+"product_id": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
+"quantity": { "type": "integer", "minimum": 1, "example": 2 },
+"unit_price": { "type": "number", "minimum": 0.01, "example": 89.99 }
+}
+}
+}
+}
+},
+"TelemetryData": {
+"type": "object",
+"required": ["framework_used", "execution_time_ms", "is_cold_start", "memory_used_mb"],
+"properties": {
+"framework_used": { "type": "string", "enum": ["SPRING_BOOT_3", "QUARKUS_3"] },
+"execution_time_ms": { "type": "integer", "example": 42 },
+"is_cold_start": { "type": "boolean", "example": true },
+"memory_used_mb": { "type": "number", "example": 115.4 }
+}
+},
+"CheckoutSpringResponse": {
+"type": "object",
+"required": ["order_id", "timestamp", "total_amount", "item_count", "telemetry"],
+"properties": {
+"order_id": { "type": "string", "example": "ord-1728610020-spring" },
+"timestamp": { "type": "string", "format": "date-time", "example": "2026-10-11T01:27:00Z" },
+"total_amount": { "type": "number", "example": 179.98 },
+"item_count": { "type": "integer", "example": 2 },
+"telemetry": {
+"$ref": "#/components/schemas/TelemetryData",
+"properties": {
+"framework_used": { "type": "string", "example": "SPRING_BOOT_3" }
+}
+}
+}
+},
+"CheckoutQuarkusResponse": {
+"type": "object",
+"required": ["order_id", "timestamp", "total_amount", "item_count", "telemetry"],
+"properties": {
+"order_id": { "type": "string", "example": "ord-1728610020-quarkus" },
+"timestamp": { "type": "string", "format": "date-time", "example": "2026-10-11T01:27:00Z" },
+"total_amount": { "type": "number", "example": 179.98 },
+"item_count": { "type": "integer", "example": 2 },
+"telemetry": {
+"$ref": "#/components/schemas/TelemetryData",
+"properties": {
+"framework_used": { "type": "string", "example": "QUARKUS_3" }
+}
+}
+}
+},
+"ErrorResponse": {
+"type": "object",
+"required": ["error", "message"],
+"properties": {
+"error": { "type": "string", "example": "INVALID_CART" },
+"message": { "type": "string", "example": "El carrito no puede estar vacío o contener cantidades inválidas." }
+}
+},
+"KillSwitchResponse": {
+"type": "object",
+"required": ["message"],
+"properties": {
+"message": { "type": "string", "example": "El demo ha alcanzado su límite de presupuesto FinOps ($7 USD). ¡Gracias por participar!" }
+}
+}
+}
+}
+}

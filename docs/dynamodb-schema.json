@@ -1,0 +1,82 @@
+{
+  "_comment": "AWS CLI Native Payloads. Extraer cada nodo y pasarlo al CLI con el parámetro --cli-input-json",
+  "create_table_input": {
+    "TableName": "MarketplaceTable",
+    "BillingMode": "PAY_PER_REQUEST",
+    "AttributeDefinitions": [
+      { "AttributeName": "PK", "AttributeType": "S" },
+      { "AttributeName": "SK", "AttributeType": "S" },
+      { "AttributeName": "GSI1PK", "AttributeType": "S" },
+      { "AttributeName": "GSI1SK", "AttributeType": "S" },
+      { "AttributeName": "GSI2PK", "AttributeType": "S" },
+      { "AttributeName": "GSI2SK", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "PK", "KeyType": "HASH" },
+      { "AttributeName": "SK", "KeyType": "RANGE" }
+    ],
+    "GlobalSecondaryIndexes": [
+      {
+        "IndexName": "CategoryIndex",
+        "KeySchema": [
+          { "AttributeName": "GSI1PK", "KeyType": "HASH" },
+          { "AttributeName": "GSI1SK", "KeyType": "RANGE" }
+        ],
+        "Projection": { "ProjectionType": "ALL" }
+      },
+      {
+        "IndexName": "FrameworkMetricsIndex",
+        "KeySchema": [
+          { "AttributeName": "GSI2PK", "KeyType": "HASH" },
+          { "AttributeName": "GSI2SK", "KeyType": "RANGE" }
+        ],
+        "Projection": { "ProjectionType": "ALL" }
+      }
+    ]
+  },
+  "update_ttl_input": {
+    "TableName": "MarketplaceTable",
+    "TimeToLiveSpecification": {
+      "Enabled": true,
+      "AttributeName": "expires_at"
+    }
+  },
+  "batch_write_seed_input": {
+    "RequestItems": {
+      "MarketplaceTable": [
+        {
+          "PutRequest": {
+            "Item": {
+              "PK": { "S": "CATALOG#BASE" },
+              "SK": { "S": "PROD#base-001" },
+              "GSI1PK": { "S": "CATEGORY#technology" },
+              "GSI1SK": { "S": "PROD#base-001" },
+              "title": { "S": "Auriculares Inalámbricos Pro" },
+              "description": { "S": "Auriculares con cancelación de ruido activa y 40h de batería." },
+              "price": { "N": "120.00" },
+              "category": { "S": "technology" },
+              "image_url": { "S": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600" },
+              "origin": { "S": "HARDCODED" }
+            }
+          }
+        },
+        {
+          "PutRequest": {
+            "Item": {
+              "PK": { "S": "CATALOG#BASE" },
+              "SK": { "S": "PROD#base-002" },
+              "GSI1PK": { "S": "CATEGORY#office" },
+              "GSI1SK": { "S": "PROD#base-002" },
+              "title": { "S": "Silla Ergonómica Backend" },
+              "description": { "S": "Silla con soporte lumbar diseñada para largas jornadas de código." },
+              "price": { "N": "250.00" },
+              "category": { "S": "office" },
+              "image_url": { "S": "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=600" },
+              "origin": { "S": "HARDCODED" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
